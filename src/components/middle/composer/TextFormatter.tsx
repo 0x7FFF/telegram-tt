@@ -40,6 +40,7 @@ interface ISelectedTextFormats {
   strikethrough?: boolean;
   monospace?: boolean;
   spoiler?: boolean;
+  blockquote?: boolean;
 }
 
 const TEXT_FORMAT_BY_TAG_NAME: Record<string, keyof ISelectedTextFormats> = {
@@ -51,6 +52,7 @@ const TEXT_FORMAT_BY_TAG_NAME: Record<string, keyof ISelectedTextFormats> = {
   DEL: 'strikethrough',
   CODE: 'monospace',
   SPAN: 'spoiler',
+  BLOCKQUOTE: 'blockquote',
 };
 const fragmentEl = document.createElement('div');
 
@@ -189,7 +191,7 @@ const TextFormatter: FC<OwnProps> = ({
       return 'active';
     }
 
-    if (key === 'monospace' || key === 'strikethrough') {
+    if (key === 'monospace' || key === 'strikethrough' || key === 'blockquote') {
       if (Object.keys(selectedTextFormats).some(
         (fKey) => fKey !== key && Boolean(selectedTextFormats[fKey as keyof ISelectedTextFormats]),
       )) {
@@ -284,11 +286,38 @@ const TextFormatter: FC<OwnProps> = ({
         strikethrough: false,
       }));
 
+      onClose();
       return;
     }
 
     const text = getSelectedText();
     document.execCommand('insertHTML', false, `<del>${text}</del>`);
+    onClose();
+  });
+
+  const handleQuotedText = useLastCallback(() => {
+    if (selectedTextFormats.blockquote) {
+      const element = getSelectedElement();
+      if (
+        !selectedRange
+        || !element
+        || element.tagName !== 'BLOCKQUOTE'
+        || !element.textContent
+      ) {
+        return;
+      }
+      element.replaceWith(element.textContent);
+      setSelectedTextFormats((selectedFormats) => ({
+        ...selectedFormats,
+        blockquote: false,
+      }));
+      onClose();
+      return;
+    }
+    const text = getSelectedText(true);
+    document.execCommand('insertHTML',
+      false,
+      `<blockquote class="blockquote" dir="auto">${text}</blockquote>`);
     onClose();
   });
 
@@ -310,6 +339,7 @@ const TextFormatter: FC<OwnProps> = ({
         monospace: false,
       }));
 
+      onClose();
       return;
     }
 
@@ -456,6 +486,14 @@ const TextFormatter: FC<OwnProps> = ({
           onClick={handleStrikethroughText}
         >
           <Icon name="strikethrough" />
+        </Button>
+        <Button
+          color="translucent"
+          ariaLabel="Quoted text"
+          className={getFormatButtonClassName('blockquote')}
+          onClick={handleQuotedText}
+        >
+          <Icon name="quote-text" />
         </Button>
         <Button
           color="translucent"
