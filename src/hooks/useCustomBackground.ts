@@ -25,15 +25,20 @@ const useCustomBackground = (theme: ThemeKey, settingValue?: string) => {
           preloadImage(url)
             .then(() => {
               setValue(`url(${url})`);
-            });
+            }).catch(e=>{});
         })
         .catch(() => {
           setThemeSettings({
+            id:undefined,
             theme,
             background: undefined,
             backgroundColor: undefined,
             isBlurred: true,
             patternColor: theme === 'dark' ? DARK_THEME_PATTERN_COLOR : DEFAULT_PATTERN_COLOR,
+            colors:undefined,
+            isDark:undefined,
+            isPattern:undefined,
+            isAnimated:undefined
           });
         });
     }

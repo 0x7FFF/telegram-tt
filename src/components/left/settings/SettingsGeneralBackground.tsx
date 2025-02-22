@@ -36,6 +36,7 @@ type StateProps = {
   isBlurred?: boolean;
   loadedWallpapers?: ApiWallpaper[];
   theme: ThemeKey;
+  currentWallpaperId?: string;
 };
 
 const SUPPORTED_TYPES = 'image/jpeg';
@@ -50,6 +51,7 @@ const SettingsGeneralBackground: FC<OwnProps & StateProps> = ({
   isBlurred,
   loadedWallpapers,
   theme,
+  currentWallpaperId
 }) => {
   const {
     loadWallpapers,
@@ -87,22 +89,42 @@ const SettingsGeneralBackground: FC<OwnProps & StateProps> = ({
   const handleResetToDefault = useCallback(() => {
     setThemeSettings({
       theme,
+      id: undefined,
       background: undefined,
       backgroundColor: undefined,
       isBlurred: true,
+      isDark:undefined,
+      isPattern:undefined,
+      colors:undefined,
+      isAnimated:undefined,
       patternColor: theme === 'dark' ? DARK_THEME_PATTERN_COLOR : DEFAULT_PATTERN_COLOR,
     });
   }, [setThemeSettings, theme]);
 
-  const handleWallPaperSelect = useCallback((slug: string) => {
-    setThemeSettings({ theme: themeRef.current!, background: slug });
-    const currentWallpaper = loadedWallpapers && loadedWallpapers.find((wallpaper) => wallpaper.slug === slug);
-    if (currentWallpaper?.document.thumbnail) {
+  const handleWallPaperSelect = useCallback((id: string, slug: string, isAnimated?: boolean, isDark?: boolean, isPattern?: boolean, colors?: number[]) => {    
+    setThemeSettings({
+      theme: themeRef.current!,
+      id,
+      background: slug,
+      isAnimated,
+      isDark,
+      isPattern,
+      colors,
+       isBlurred: false
+    });
+    const currentWallpaper = loadedWallpapers && loadedWallpapers.find((wallpaper) => wallpaper.id === id);
+
+    if (currentWallpaper?.document?.thumbnail) {
       getAverageColor(currentWallpaper.document.thumbnail.dataUri)
         .then((color) => {
           const patternColor = getPatternColor(color);
           const rgbColor = `#${rgb2hex(color)}`;
-          setThemeSettings({ theme: themeRef.current!, backgroundColor: rgbColor, patternColor });
+          setThemeSettings({
+            theme: themeRef.current!,
+            backgroundColor: rgbColor,
+            patternColor,
+
+          });
         });
     }
   }, [loadedWallpapers, setThemeSettings]);
@@ -119,7 +141,7 @@ const SettingsGeneralBackground: FC<OwnProps & StateProps> = ({
   });
 
   const isUploading = loadedWallpapers?.[0] && loadedWallpapers[0].slug === UPLOADING_WALLPAPER_SLUG;
-
+  const currentWallpaper = loadedWallpapers?.find(w => w.id === currentWallpaperId);
   return (
     <div className="SettingsGeneralBackground settings-content custom-scroll">
       <div className="settings-item pt-3">
@@ -145,6 +167,7 @@ const SettingsGeneralBackground: FC<OwnProps & StateProps> = ({
         </ListItem>
 
         <Checkbox
+          disabled={currentWallpaper?.noFile || currentWallpaper?.pattern}
           label={lang('BackgroundBlurred')}
           checked={Boolean(isBlurred)}
           onChange={handleWallPaperBlurChange}
@@ -155,10 +178,10 @@ const SettingsGeneralBackground: FC<OwnProps & StateProps> = ({
         <div className="settings-wallpapers">
           {loadedWallpapers.map((wallpaper) => (
             <WallpaperTile
-              key={wallpaper.slug}
+              key={wallpaper.id}
               wallpaper={wallpaper}
               theme={theme}
-              isSelected={background === wallpaper.slug}
+              isSelected={wallpaper.id === currentWallpaperId}
               onClick={handleWallPaperSelect}
             />
           ))}
@@ -173,7 +196,7 @@ const SettingsGeneralBackground: FC<OwnProps & StateProps> = ({
 export default memo(withGlobal<OwnProps>(
   (global): StateProps => {
     const theme = selectTheme(global);
-    const { background, isBlurred } = global.settings.themes[theme] || {};
+    const { background, isBlurred, id } = global.settings.themes[theme] || {};
     const { loadedWallpapers } = global.settings;
 
     return {
@@ -181,6 +204,7 @@ export default memo(withGlobal<OwnProps>(
       isBlurred,
       loadedWallpapers,
       theme,
+      currentWallpaperId: id
     };
   },
 )(SettingsGeneralBackground));

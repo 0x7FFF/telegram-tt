@@ -31,6 +31,11 @@
   &.customBgImage::before {
     background-image: var(--custom-background) !important;
     transform: scale(1.1);
+    width: 100%;
+    height: 100%;
+    mix-blend-mode: soft-light;
+    background: center repeat;
+    background-size: cover;
   }
 
   :global(body:not(.no-page-transitions)) &.withTransition {

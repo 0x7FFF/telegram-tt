@@ -24,6 +24,7 @@ export const INITIAL_PERFORMANCE_STATE_MAX: PerformanceType = {
   mediaViewerAnimations: true,
   messageComposerAnimations: true,
   messageSendingAnimations: true,
+  wallpaperBackgroundAnimations:true,
   pageTransitions: true,
   reactionEffects: true,
   rightColumnAnimations: true,
@@ -42,6 +43,7 @@ export const INITIAL_PERFORMANCE_STATE_MID: PerformanceType = {
   mediaViewerAnimations: true,
   messageComposerAnimations: true,
   messageSendingAnimations: true,
+  wallpaperBackgroundAnimations:true,
   pageTransitions: true,
   reactionEffects: true,
   rightColumnAnimations: false,
@@ -60,6 +62,7 @@ export const INITIAL_PERFORMANCE_STATE_MIN: PerformanceType = {
   mediaViewerAnimations: false,
   messageComposerAnimations: false,
   messageSendingAnimations: false,
+  wallpaperBackgroundAnimations:false,
   pageTransitions: false,
   reactionEffects: false,
   rightColumnAnimations: false,
@@ -314,6 +317,8 @@ export const INITIAL_GLOBAL_STATE: GlobalState = {
     isMinimized: false,
     isHidden: false,
   },
+
+  wallpaperAnimation: 1
 };
 
 export const INITIAL_TAB_STATE: TabState = {

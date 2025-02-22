@@ -227,3 +227,26 @@ export const getTextColor = (color: number): string => {
   const luma = getColorLuma([r, g, b]);
   return luma > LUMA_THRESHOLD ? 'black' : 'white';
 };
+
+export const hexToVec3 = (
+  hex: string
+): readonly [r: number, g: number, b: number] => {
+  if (hex.startsWith('#')) {
+    hex = hex.slice(1)
+  }
+
+  const r = parseInt(hex.slice(0, 2), 16)
+  const g = parseInt(hex.slice(2, 4), 16)
+  const b = parseInt(hex.slice(4, 6), 16)
+
+  return [r, g, b] as const
+}
+
+export const telegramColorToVec3 = (color:number)=>{
+ return hexToVec3(getHexColorFromTelegramColor(color));
+}
+
+function getHexColorFromTelegramColor(color: number) {
+  const hex = (color < 0 ? 0xFFFFFF + color : color).toString(16);
+  return '#' + (hex.length >= 6 ? hex : '0'.repeat(6 - hex.length) + hex);
+}

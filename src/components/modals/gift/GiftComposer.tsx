@@ -30,6 +30,8 @@ import Switcher from '../../ui/Switcher';
 import TextArea from '../../ui/TextArea';
 
 import styles from './GiftComposer.module.scss';
+import AnimatedWallpaper from '../../ui/AnimatedWallpaper';
+import { isWebGLSupported } from '../../../util/renderAnimatedWallpaper';
 
 export type OwnProps = {
   gift: GiftOption;
@@ -39,6 +41,10 @@ export type OwnProps = {
 export type StateProps = {
   captionLimit?: number;
   theme: ThemeKey;
+  isAnimatedBackground?:boolean;
+  isBackgroundDark?:boolean;
+  isBackgroundPattern?:boolean;
+  backgroundColors?:number[];
   isBackgroundBlurred?: boolean;
   patternColor?: string;
   customBackground?: string;
@@ -56,6 +62,10 @@ function GiftComposer({
   peer,
   captionLimit,
   theme,
+  isAnimatedBackground,
+  isBackgroundDark,
+  isBackgroundPattern,
+  backgroundColors,
   isBackgroundBlurred,
   patternColor,
   backgroundColor,
@@ -285,6 +295,7 @@ function GiftComposer({
     customBackground && isBackgroundBlurred && styles.blurred,
   );
 
+  const _isWebGLSupported = isWebGLSupported();
   return (
     <div className={buildClassName(styles.root, 'custom-scroll')}>
       <div
@@ -298,8 +309,23 @@ function GiftComposer({
       >
         <div
           className={bgClassName}
-          style={customBackgroundValue ? `--custom-background: ${customBackgroundValue}` : undefined}
-        />
+          style={buildStyle(
+            'z-index:0',
+            '--bg-size:cover',
+            customBackgroundValue && (!isAnimatedBackground || !_isWebGLSupported) && `--custom-background: ${customBackgroundValue}`
+          )}       
+        >
+          {isAnimatedBackground && _isWebGLSupported && (
+            <AnimatedWallpaper
+              blobUrl={customBackgroundValue}
+              colors={backgroundColors || []}
+              isDark={isBackgroundDark}
+              isPattern={isBackgroundPattern}        
+              canAnimate={true}
+              animate={1}                    
+            />
+          )}
+        </div>
         <ActionMessage key={isStarGift ? gift.id : gift.months} message={localMessage} />
       </div>
       {renderOptionsSection()}
@@ -317,14 +343,22 @@ export default memo(withGlobal<OwnProps>(
       patternColor,
       background: customBackground,
       backgroundColor,
+      isAnimated,
+      isDark,
+      colors,
+      isPattern
     } = global.settings.themes[theme] || {};
     const peer = selectPeer(global, peerId);
 
     const tabState = selectTabState(global);
-
+     
     return {
       peer,
       theme,
+      isAnimatedBackground:isAnimated,
+      isBackgroundDark:isDark,
+      isBackgroundPattern:isPattern,
+      backgroundColors:colors,
       isBackgroundBlurred,
       patternColor,
       customBackground,

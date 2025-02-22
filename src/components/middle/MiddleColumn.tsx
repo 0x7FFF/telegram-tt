@@ -50,6 +50,7 @@ import {
   selectIsInSelectMode,
   selectIsRightColumnShown,
   selectIsUserBlocked,
+  selectPerformanceSettingsValue,
   selectPinnedIds,
   selectTabState,
   selectTheme,
@@ -100,6 +101,8 @@ import MiddleSearch from './search/MiddleSearch.async';
 
 import './MiddleColumn.scss';
 import styles from './MiddleColumn.module.scss';
+import AnimatedWallpaper from '../ui/AnimatedWallpaper';
+import { isWebGLSupported } from '../../util/renderAnimatedWallpaper';
 
 interface OwnProps {
   leftColumnRef: React.RefObject<HTMLDivElement>;
@@ -120,6 +123,13 @@ type StateProps = {
   defaultBannedRights?: ApiChatBannedRights;
   pinnedMessagesCount?: number;
   theme: ThemeKey;
+  isAnimatedBackground?: boolean;
+  isBackgroundDark?: boolean;
+  isBackgroundPattern?: boolean;
+  backgroundColors?: number[];
+  isWebGLSupported?:boolean;
+  canAnimateWallpaper?:boolean;
+  wallpaperAnimation?:number;
   customBackground?: string;
   backgroundColor?: string;
   patternColor?: string;
@@ -179,6 +189,13 @@ function MiddleColumn({
   currentUserBannedRights,
   defaultBannedRights,
   pinnedMessagesCount,
+  isAnimatedBackground,
+  isBackgroundDark,
+  isBackgroundPattern,
+  backgroundColors,
+  isWebGLSupported,
+  canAnimateWallpaper,
+  wallpaperAnimation,
   customBackground,
   theme,
   backgroundColor,
@@ -503,8 +520,19 @@ function MiddleColumn({
       )}
       <div
         className={bgClassName}
-        style={customBackgroundValue ? `--custom-background: ${customBackgroundValue}` : undefined}
-      />
+        style={customBackgroundValue && (!isAnimatedBackground || !isWebGLSupported) ? `--custom-background: ${customBackgroundValue}` : undefined}
+      >
+        {isAnimatedBackground && isWebGLSupported && (
+          <AnimatedWallpaper
+            blobUrl={customBackgroundValue}
+            colors={backgroundColors || []}
+            isDark={isBackgroundDark}
+            isPattern={isBackgroundPattern}
+            canAnimate={true}
+            animate={canAnimateWallpaper ? wallpaperAnimation : 0}
+          />
+        )}
+      </div>
       <div id="middle-column-portals" />
       {Boolean(renderingChatId && renderingThreadId) && (
         <>
@@ -717,9 +745,12 @@ export default memo(withGlobal<OwnProps>(
   (global, { isMobile }): StateProps => {
     const theme = selectTheme(global);
     const {
-      isBlurred: isBackgroundBlurred, background: customBackground, backgroundColor, patternColor,
+      isBlurred: isBackgroundBlurred, background: customBackground,
+       backgroundColor, patternColor, isAnimated, isDark, colors, isPattern, 
     } = global.settings.themes[theme] || {};
 
+    const canAnimateWallpaper = selectPerformanceSettingsValue(global, 'wallpaperBackgroundAnimations');
+    const wallpaperAnimation = global.wallpaperAnimation;
     const {
       messageLists, isLeftColumnShown, activeEmojiInteractions,
       seenByModal, reactorModal, shouldSkipHistoryAnimations,
@@ -730,6 +761,13 @@ export default memo(withGlobal<OwnProps>(
 
     const state: StateProps = {
       theme,
+      isAnimatedBackground: isAnimated,
+      isBackgroundDark: isDark,
+      isBackgroundPattern: isPattern,
+      backgroundColors: colors,
+      isWebGLSupported:isWebGLSupported(),
+      canAnimateWallpaper,
+      wallpaperAnimation,
       customBackground,
       backgroundColor,
       patternColor,
