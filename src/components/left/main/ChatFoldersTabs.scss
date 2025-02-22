@@ -1,0 +1,151 @@
+html.theme-dark .ChatFoldersColumn {
+    background-color: #141414;
+    color: var(--primary-color);
+  }
+  
+  .ChatFoldersColumn {
+    display: flex;
+    overflow: hidden;
+    flex-direction: column;
+    background-color: rgb(33, 33, 33);
+    transition: max-width ease-in 0.15s;
+    align-items: center;
+  
+    > button {
+      height: 64px;
+      width: 100%;
+      align-self: center;
+      border-radius: 0;
+    }
+  
+    .animated-menu-icon {
+      position: absolute;
+  
+      &,
+      &::before,
+      &::after {
+        width: 1.35rem;
+        height: 0.15rem;
+        border-radius: 0.15rem;
+        background-color: var(--color-text-secondary);
+      }
+  
+      &::before,
+      &::after {
+        position: absolute;
+        left: 0;
+        content: "";
+      }
+  
+      &::before {
+        top: -0.375rem;
+      }
+  
+      &::after {
+        top: 0.375rem;
+      }
+    }
+  
+    .ChatFoldersTabs {
+      flex: 1;
+    }
+  }
+  
+  #LeftMainHeader > button {
+    transition: max-width ease-out 0.15s;
+    overflow: hidden;
+  }
+  
+  .ChatFoldersTabs {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  
+    &.ChatFoldersTabs--view-left {
+      height: 100%;
+      flex-direction: row;
+    }
+  
+    .tabs-placeholder {
+      height: 2.625rem;
+      transition: height 150ms ease;
+  
+      &:not(.open) {
+        height: 0;
+      }
+    }
+  
+    .TabList {
+      justify-content: flex-start;
+      border-bottom: 0;
+      z-index: 1;
+  
+      opacity: 1;
+      transition: opacity var(--layer-transition);
+    }
+  
+    &--tabs-hidden .TabList {
+      pointer-events: none;
+      opacity: 0.25;
+    }
+  
+    .Tab {
+      flex: 0 0 auto;
+    }
+  
+    > .Transition {
+      flex: 1;
+      overflow: hidden;
+    }
+  }
+  
+  @media (min-width: 926px) {
+    .ChatFoldersTabs--view-top {
+      display: none;
+    }
+    .ChatFoldersColumn {
+      max-width: 5rem;
+    }
+    .LeftColumn--folders-left #LeftMainHeader {
+      > button:not(:has(.state-back)) {
+        max-width: 0;
+        padding: 0;
+  
+        + .SearchInput {
+          margin-left: 0;
+        }
+      }
+    }
+  }
+  
+  @media (max-width: 925px) {
+    .ChatFoldersColumn {
+      max-width: 0 !important;
+      display: none;
+    }
+    .ChatFoldersTabs--view-top {
+      display: flex !important;
+    }
+    #LeftMainHeader > button {
+      max-width: 40px;
+    }
+  }
+  
+  .LeftColumn--folders-left {
+    .ChatFoldersTabs--view-top {
+      display: none;
+    }
+    .ChatFoldersColumn {
+      max-width: 5rem;
+    }
+  }
+  
+  .LeftColumn--folders-top {
+    .ChatFoldersColumn {
+      max-width: 0 !important;
+    }
+    .ChatFoldersTabs--view-top {
+      display: flex !important;
+    }
+  }
+  

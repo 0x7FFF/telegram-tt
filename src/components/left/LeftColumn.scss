@@ -24,7 +24,6 @@
 
   .SearchInput {
     margin-left: 0.625rem;
-    max-width: calc(100% - 3.25rem);
 
     @media (max-width: 600px) {
       max-width: calc(100% - 3rem);
@@ -67,3 +66,12 @@
     }
   }
 }
+
+.main-menu {
+
+  .menu-container {
+    --offset-x: 1rem;
+    --offset-y: 3.25rem;
+  }
+}
+

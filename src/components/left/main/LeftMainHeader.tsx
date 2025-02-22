@@ -56,10 +56,9 @@ type OwnProps = {
   isClosingSearch?: boolean;
   shouldSkipTransition?: boolean;
   onSearchQuery: (query: string) => void;
-  onSelectSettings: NoneToVoidFunction;
-  onSelectContacts: NoneToVoidFunction;
-  onSelectArchived: NoneToVoidFunction;
   onReset: NoneToVoidFunction;
+  onMainMenuTrigger: NoneToVoidFunction;
+  isMainMenuOpen: boolean;
 };
 
 type StateProps =
@@ -72,6 +71,7 @@ type StateProps =
     isMessageListOpen: boolean;
     isCurrentUserPremium?: boolean;
     isConnectionStatusMinimized: ISettings['isConnectionStatusMinimized'];
+    foldersTabsView: ISettings['foldersTabsView'];
     areChatsLoaded?: boolean;
     hasPasscode?: boolean;
     canSetPasscode?: boolean;
@@ -98,14 +98,14 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
   isFetchingDifference,
   isMessageListOpen,
   isConnectionStatusMinimized,
+  foldersTabsView,
   areChatsLoaded,
   hasPasscode,
   canSetPasscode,
   onSearchQuery,
-  onSelectSettings,
-  onSelectContacts,
-  onSelectArchived,
   onReset,
+  onMainMenuTrigger,
+  isMainMenuOpen,
 }) => {
   const {
     setGlobalSearchDate,
@@ -118,8 +118,6 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
   const oldLang = useOldLang();
   const lang = useLang();
   const { isMobile, isDesktop } = useAppLayout();
-
-  const [isBotMenuOpen, markBotMenuOpen, unmarkBotMenuOpen] = useFlag();
 
   const areContactsVisible = content === LeftColumnContent.Contacts;
   const hasMenu = content === LeftColumnContent.ChatList;
@@ -204,16 +202,6 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
     ? lang('SearchFriends')
     : lang('Search');
 
-  const versionString = IS_BETA ? `${APP_VERSION} Beta (${APP_REVISION})` : (DEBUG ? APP_REVISION : APP_VERSION);
-
-  const isFullscreen = useFullscreenStatus();
-
-  // Disable dropdown menu RTL animation for resize
-  const {
-    shouldDisableDropdownMenuTransitionRef,
-    handleDropdownMenuTransitionEnd,
-  } = useLeftHeaderButtonRtlForumTransition(shouldHideSearch);
-
   // eslint-disable-next-line no-null/no-null
   const headerRef = useRef<HTMLDivElement>(null);
   useElectronDrag(headerRef);
@@ -252,29 +240,7 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
   return (
     <div className="LeftMainHeader">
       <div id="LeftMainHeader" className="left-header" ref={headerRef}>
-        {oldLang.isRtl && <div className="DropdownMenuFiller" />}
-        <DropdownMenu
-          trigger={MainButton}
-          footer={`${APP_NAME} ${versionString}`}
-          className={buildClassName(
-            'main-menu',
-            oldLang.isRtl && 'rtl',
-            shouldHideSearch && oldLang.isRtl && 'right-aligned',
-            shouldDisableDropdownMenuTransitionRef.current && oldLang.isRtl && 'disable-transition',
-          )}
-          forceOpen={isBotMenuOpen}
-          positionX={shouldHideSearch && oldLang.isRtl ? 'right' : 'left'}
-          transformOriginX={IS_ELECTRON && IS_MAC_OS && !isFullscreen ? 90 : undefined}
-          onTransitionEnd={oldLang.isRtl ? handleDropdownMenuTransitionEnd : undefined}
-        >
-          <LeftSideMenuItems
-            onSelectArchived={onSelectArchived}
-            onSelectContacts={onSelectContacts}
-            onSelectSettings={onSelectSettings}
-            onBotMenuOpened={markBotMenuOpen}
-            onBotMenuClosed={unmarkBotMenuOpen}
-          />
-        </DropdownMenu>
+        {(<MainButton onTrigger={onMainMenuTrigger} isOpen={isMainMenuOpen} />)}
         <SearchInput
           inputId="telegram-search-input"
           resultsItemSelector=".LeftSearch .ListItem-button"
@@ -339,7 +305,7 @@ export default memo(withGlobal<OwnProps>(
     const {
       connectionState, isSyncing, isFetchingDifference,
     } = global;
-    const { isConnectionStatusMinimized } = global.settings.byKey;
+    const { isConnectionStatusMinimized, foldersTabsView } = global.settings.byKey;
 
     return {
       searchQuery,
@@ -352,6 +318,7 @@ export default memo(withGlobal<OwnProps>(
       isFetchingDifference,
       isMessageListOpen: Boolean(selectCurrentMessageList(global)),
       isConnectionStatusMinimized,
+      foldersTabsView,
       isCurrentUserPremium: selectIsCurrentUserPremium(global),
       areChatsLoaded: Boolean(global.chats.listIds.active),
       hasPasscode: Boolean(global.passcode.hasPasscode),

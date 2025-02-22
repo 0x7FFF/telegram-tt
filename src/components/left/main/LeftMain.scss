@@ -11,46 +11,6 @@
     overflow: hidden;
   }
 
-  .ChatFolders {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-
-    .tabs-placeholder {
-      height: 2.625rem;
-      /* stylelint-disable-next-line plugin/no-low-performance-animation-properties */
-      transition: height 150ms ease;
-
-      &:not(.open) {
-        height: 0;
-      }
-    }
-
-    .TabList {
-      justify-content: flex-start;
-      border-bottom: 0;
-      z-index: 1;
-
-      opacity: 1;
-      transition: opacity var(--layer-transition);
-    }
-
-    &--tabs-hidden .TabList {
-      pointer-events: none;
-      opacity: 0.25;
-    }
-
-    .Tab {
-      flex: 0 0 auto;
-    }
-
-    > .Transition {
-      flex: 1;
-      overflow: hidden;
-    }
-  }
-
   .RecentContacts,
   .LeftSearch,
   .search-content {
@@ -66,5 +26,33 @@
     transform: translateX(-50%);
 
     white-space: nowrap;
+  }
+
+  .DropdownMenuFiller {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .DropdownMenu.rtl {
+    transition: var(--slide-transition) transform;
+    position: absolute;
+    z-index: 2;
+
+    &.right-aligned {
+      transform:
+        translateX(
+            calc(
+              clamp(
+              var(--left-column-min-width),
+              var(--left-column-width),
+              var(--left-column-max-width)
+              ) - 4.375rem
+            )
+        );
+    }
+
+    &.disable-transition {
+      transition: none;
+    }
   }
 }

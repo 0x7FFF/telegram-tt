@@ -1,6 +1,6 @@
 import { getGlobal } from '../../global';
 
-import type { ApiChatFolder } from '../../api/types';
+import { ApiChatFolder, ApiMessageEntityTypes } from '../../api/types';
 import type { IconName } from '../../types/icons';
 import type { Dispatch, StateReducer } from '../useReducer';
 
@@ -109,14 +109,14 @@ export type FoldersState = {
   error?: string;
   folderId?: number;
   chatFilter: string;
-  folder: Omit<ApiChatFolder, 'id' | 'description' | 'emoticon'>;
+  folder: Omit<ApiChatFolder, 'id' | 'description'>;
   includeFilters?: FolderIncludeFilters;
   excludeFilters?: FolderExcludeFilters;
 };
 export type FoldersActions = (
   'setTitle' | 'saveFilters' | 'editFolder' | 'reset' | 'setChatFilter' | 'setIsLoading' | 'setError' |
   'editIncludeFilters' | 'editExcludeFilters' | 'setIncludeFilters' | 'setExcludeFilters' | 'setIsTouched' |
-  'setFolderId' | 'setIsChatlist'
+  'setFolderId' | 'setIsChatlist' | 'setEmoticon' | 'setCustomEmoji'
   );
 export type FolderEditDispatch = Dispatch<FoldersState, FoldersActions>;
 
@@ -124,6 +124,7 @@ const INITIAL_STATE: FoldersState = {
   mode: 'create',
   chatFilter: '',
   folder: {
+    emoticon: '',
     title: { text: '' },
     includedChatIds: [],
     excludedChatIds: [],
@@ -140,7 +141,41 @@ const foldersReducer: StateReducer<FoldersState, FoldersActions> = (
         ...state,
         folder: {
           ...state.folder,
-          title: { text: action.payload },
+          title: {
+            ...state.folder.title,
+            text: action.payload,
+          },
+        },
+        isTouched: true,
+      };
+    case 'setEmoticon':
+      return {
+        ...state,
+        folder: {
+          ...state.folder,
+          emoticon: action.payload,
+          title: {
+            ...state.folder.title,
+            entities: [],
+          },
+        },
+        isTouched: true,
+      };
+    case 'setCustomEmoji':
+      return {
+        ...state,
+        folder: {
+          ...state.folder,
+          emoticon: action.payload.emoji,
+          title: {
+            text: action.payload.emoji,
+            entities: [{
+              type: ApiMessageEntityTypes.CustomEmoji,
+              offset: 0,
+              length: 2,
+              documentId: action.payload.documentId.toString(),
+            }],
+          },
         },
         isTouched: true,
       };
@@ -185,6 +220,7 @@ const foldersReducer: StateReducer<FoldersState, FoldersActions> = (
           folder: {
             ...omit(state.folder, INCLUDE_FILTER_FIELDS),
             title: state.folder.title ? state.folder.title : { text: getSuggestedFolderName(state.includeFilters) },
+            emoticon: state.folder.emoticon,
             ...state.includeFilters,
           },
           includeFilters: undefined,

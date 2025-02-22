@@ -18,6 +18,7 @@ import './TabList.scss';
 export type TabWithProperties = {
   id?: number;
   title: TeactNode;
+  emoticon?: TeactNode;
   badgeCount?: number;
   isBlocked?: boolean;
   isBadgeActive?: boolean;
@@ -29,6 +30,7 @@ type OwnProps = {
   activeTab: number;
   className?: string;
   tabClassName?: string;
+  tabHeight?: number;
   onSwitchTab: (index: number) => void;
   contextRootElementSelector?: string;
 };
@@ -40,6 +42,7 @@ const SCROLL_DURATION = IS_IOS ? 450 : IS_ANDROID ? 400 : 300;
 const TabList: FC<OwnProps> = ({
   tabs, activeTab, onSwitchTab,
   contextRootElementSelector, className, tabClassName,
+  tabHeight,
 }) => {
   // eslint-disable-next-line no-null/no-null
   const containerRef = useRef<HTMLDivElement>(null);
@@ -83,6 +86,7 @@ const TabList: FC<OwnProps> = ({
         <Tab
           key={tab.id}
           title={tab.title}
+          emoticon={tab.emoticon}
           isActive={i === activeTab}
           isBlocked={tab.isBlocked}
           badgeCount={tab.badgeCount}
@@ -92,6 +96,7 @@ const TabList: FC<OwnProps> = ({
           clickArg={i}
           contextActions={tab.contextActions}
           contextRootElementSelector={contextRootElementSelector}
+          style={`height: ${tabHeight}px;`}
           className={tabClassName}
         />
       ))}

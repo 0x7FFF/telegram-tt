@@ -1,3 +1,5 @@
+import type { TeactNode } from '../lib/teact/teact';
+
 declare const process: NodeJS.Process;
 
 declare module '*.module.scss';
@@ -44,7 +46,7 @@ type NoneToVoidFunction = () => void;
 type EmojiCategory = {
   id: string;
   name: string;
-  emojis: string[];
+  emojis: TeactNode[];
 };
 
 type Emoji = {

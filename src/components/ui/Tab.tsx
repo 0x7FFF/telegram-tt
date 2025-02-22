@@ -19,10 +19,13 @@ import MenuItem from './MenuItem';
 import MenuSeparator from './MenuSeparator';
 
 import './Tab.scss';
+import RippleEffect from './RippleEffect';
 
 type OwnProps = {
   className?: string;
+  style?: string;
   title: TeactNode;
+  emoticon?: TeactNode;
   isActive?: boolean;
   isBlocked?: boolean;
   badgeCount?: number;
@@ -41,7 +44,9 @@ const classNames = {
 
 const Tab: FC<OwnProps> = ({
   className,
+  style,
   title,
+  emoticon,
   isActive,
   isBlocked,
   badgeCount,
@@ -138,15 +143,20 @@ const Tab: FC<OwnProps> = ({
       onMouseDown={handleMouseDown}
       onContextMenu={handleContextMenu}
       ref={tabRef}
+      style={style}
     >
       <span className="Tab_inner">
-        {typeof title === 'string' ? renderText(title) : title}
+        {emoticon && (<span className="emoticon-wrapper">{emoticon}</span>)}
+        <span className="Tab_text">
+          {typeof title === 'string' ? renderText(title) : title}
+        </span>
         {Boolean(badgeCount) && (
           <span className={buildClassName('badge', isBadgeActive && classNames.badgeActive)}>{badgeCount}</span>
         )}
         {isBlocked && <Icon name="lock-badge" className="blocked" />}
         <i className="platform" />
       </span>
+      <RippleEffect />
 
       {contextActions && contextMenuAnchor !== undefined && (
         <Menu
