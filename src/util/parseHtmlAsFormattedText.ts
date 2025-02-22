@@ -4,6 +4,22 @@ import { ApiMessageEntityTypes } from '../api/types';
 import { RE_LINK_TEMPLATE } from '../config';
 import { IS_EMOJI_SUPPORTED } from './windowEnvironment';
 
+interface MarkdownNode {
+  type: 'text' | 'bold' | 'italic' | 'code' | 'pre' | 'strike' | 'underline' | 'blockquote' | 'link' | 'customEmoji';
+  content: string;
+  children?: MarkdownNode[];
+  meta?: {
+    language?: string;
+    url?: string;
+    documentId?: string;
+  };
+}
+interface MarkdownMatch {
+  type: string;
+  match: RegExpMatchArray;
+  index: number;
+}
+
 export const ENTITY_CLASS_BY_NODE_NAME: Record<string, ApiMessageEntityTypes> = {
   B: ApiMessageEntityTypes.Bold,
   STRONG: ApiMessageEntityTypes.Bold,
@@ -21,12 +37,144 @@ export const ENTITY_CLASS_BY_NODE_NAME: Record<string, ApiMessageEntityTypes> = 
 
 const MAX_TAG_DEEPNESS = 3;
 
+function parseMarkdownToAst(text: string): MarkdownNode[] {
+  const ast: MarkdownNode[] = [];
+  let currentPos = 0;
+
+  while (currentPos < text.length) {
+    // Define explicit types for matches
+    const patterns: Record<string, RegExp> = {
+      bold: /\*\*(.+?)\*\*/,
+      italic: /__(.+?)__/,
+      code: /`([^`]+)`/,
+      pre: /```(\w*)\n?([\s\S]+?)```/,
+      strike: /~~(.+?)~~/,
+      link: /\[([^\]]+)]\(([^)]+)\)/,
+      customEmoji: /\[([^\]]+)]\(customEmoji:(\d+)\)/
+    };
+
+    // Find all matches with their positions
+    const matches: MarkdownMatch[] = Object.entries(patterns)
+      .map(([type, pattern]) => {
+        const match = text.slice(currentPos).match(pattern);
+        if (match && match.index !== undefined) {
+          return {
+            type,
+            match,
+            index: match.index
+          };
+        }
+        return null;
+      })
+      .filter((match): match is MarkdownMatch => match !== null);
+
+    // Find earliest match
+    const earliestMatch = matches.reduce<MarkdownMatch | null>((earliest, current) => {
+      if (!earliest || current.index < earliest.index) {
+        return current;
+      }
+      return earliest;
+    }, null);
+
+    if (earliestMatch) {
+      // Add text before the match if any
+      if (earliestMatch.index > 0) {
+        ast.push({
+          type: 'text',
+          content: text.slice(currentPos, currentPos + earliestMatch.index)
+        });
+      }
+
+      // Process the match based on type
+      const {type, match} = earliestMatch;
+      switch (type) {
+        case 'pre':
+          ast.push({
+            type: 'pre',
+            content: match[2],
+            meta: {
+              language: match[1] || ''
+            }
+          });
+          break;
+
+        case 'link':
+          ast.push({
+            type: 'link',
+            content: match[1],
+            meta: {
+              url: match[2]
+            }
+          });
+          break;
+
+        case 'customEmoji':
+          ast.push({
+            type: 'customEmoji',
+            content: match[1],
+            meta: {
+              documentId: match[2]
+            }
+          });
+          break;
+
+        default:
+          ast.push({
+            type: type as MarkdownNode['type'],
+            content: match[1]
+          });
+      }
+
+      currentPos += earliestMatch.index + match[0].length;
+    } else {
+      // No more matches, add remaining text
+      ast.push({
+        type: 'text',
+        content: text.slice(currentPos)
+      });
+      break;
+    }
+  }
+
+  return ast;
+}
+
+function renderAstToHtml(ast: MarkdownNode[]): string {
+  return ast.map(node => {
+    switch (node.type) {
+      case 'text':
+        return node.content;
+      case 'bold':
+        return `<b>${node.content}</b>`;
+      case 'italic':
+        return `<i>${node.content}</i>`;
+      case 'code':
+        return `<code>${node.content}</code>`;
+      case 'pre':
+        return `<pre${node.meta?.language ? ` data-language="${node.meta.language}"` : ''}>${node.content}</pre>`;
+      case 'strike':
+        return `<s>${node.content}</s>`;
+      case 'link':
+        return `<a href="${node.meta?.url}">${node.content}</a>`;
+      case 'customEmoji':
+        return `<img alt="${node.content}" data-document-id="${node.meta?.documentId}">`;
+      default:
+        return node.content;
+    }
+  }).join('');
+}
+
 export default function parseHtmlAsFormattedText(
   html: string, withMarkdownLinks = false, skipMarkdown = false,
 ): ApiFormattedText {
+  if (!skipMarkdown) {
+    const ast = parseMarkdownToAst(html);
+    html = renderAstToHtml(ast);
+  }
+
   const fragment = document.createElement('div');
-  fragment.innerHTML = skipMarkdown ? html
-    : withMarkdownLinks ? parseMarkdown(parseMarkdownLinks(html)) : parseMarkdown(html);
+  fragment.innerHTML = html;
+
   fixImageContent(fragment);
   const text = fragment.innerText.trim().replace(/\u200b+/g, '');
   const trimShift = fragment.innerText.indexOf(text[0]);
@@ -73,71 +221,6 @@ export function fixImageContent(fragment: HTMLDivElement) {
     } else { // Regular emoji with image fallback
       node.replaceWith(node.alt || '');
     }
-  });
-}
-
-function parseMarkdown(html: string) {
-  let parsedHtml = html.slice(0);
-
-  // Strip redundant nbsp's
-  parsedHtml = parsedHtml.replace(/&nbsp;/g, ' ');
-
-  // Replace <div><br></div> with newline (new line in Safari)
-  parsedHtml = parsedHtml.replace(/<div><br([^>]*)?><\/div>/g, '\n');
-  // Replace <br> with newline
-  parsedHtml = parsedHtml.replace(/<br([^>]*)?>/g, '\n');
-
-  // Strip redundant <div> tags
-  parsedHtml = parsedHtml.replace(/<\/div>(\s*)<div>/g, '\n');
-  parsedHtml = parsedHtml.replace(/<div>/g, '\n');
-  parsedHtml = parsedHtml.replace(/<\/div>/g, '');
-
-  // Pre
-  parsedHtml = parsedHtml.replace(/^`{3}(.*?)[\n\r](.*?[\n\r]?)`{3}/gms, '<pre data-language="$1">$2</pre>');
-  parsedHtml = parsedHtml.replace(/^`{3}[\n\r]?(.*?)[\n\r]?`{3}/gms, '<pre>$1</pre>');
-  parsedHtml = parsedHtml.replace(/[`]{3}([^`]+)[`]{3}/g, '<pre>$1</pre>');
-
-  // Code
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[`]{1}([^`\n]+)[`]{1}(?![^<]*<\/(code|pre)>)/g,
-    '<code>$2</code>',
-  );
-
-  // Custom Emoji markdown tag
-  if (!IS_EMOJI_SUPPORTED) {
-    // Prepare alt text for custom emoji
-    parsedHtml = parsedHtml.replace(/\[<img[^>]+alt="([^"]+)"[^>]*>]/gm, '[$1]');
-  }
-  parsedHtml = parsedHtml.replace(
-    /(?!<(?:code|pre)[^<]*|<\/)\[([^\]\n]+)\]\(customEmoji:(\d+)\)(?![^<]*<\/(?:code|pre)>)/g,
-    '<img alt="$1" data-document-id="$2">',
-  );
-
-  // Other simple markdown
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[*]{2}([^*\n]+)[*]{2}(?![^<]*<\/(code|pre)>)/g,
-    '<b>$2</b>',
-  );
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[_]{2}([^_\n]+)[_]{2}(?![^<]*<\/(code|pre)>)/g,
-    '<i>$2</i>',
-  );
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[~]{2}([^~\n]+)[~]{2}(?![^<]*<\/(code|pre)>)/g,
-    '<s>$2</s>',
-  );
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[|]{2}([^|\n]+)[|]{2}(?![^<]*<\/(code|pre)>)/g,
-    `<span data-entity-type="${ApiMessageEntityTypes.Spoiler}">$2</span>`,
-  );
-
-  return parsedHtml;
-}
-
-function parseMarkdownLinks(html: string) {
-  return html.replace(new RegExp(`\\[([^\\]]+?)]\\((${RE_LINK_TEMPLATE}+?)\\)`, 'g'), (_, text, link) => {
-    const url = link.includes('://') ? link : link.includes('@') ? `mailto:${link}` : `https://${link}`;
-    return `<a href="${url}">${text}</a>`;
   });
 }
 

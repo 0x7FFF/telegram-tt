@@ -157,10 +157,15 @@ const SettingsGeneralBackground: FC<OwnProps & StateProps> = ({
     if (!isFirstRunRef.current) {
       const patternColor = getPatternColor(rgb);
       setThemeSettings({
+        id:undefined,
         theme: themeRef.current!,
         background: undefined,
         backgroundColor: color,
         patternColor,
+        colors:undefined,
+        isDark:undefined,
+        isPattern:undefined,
+        isAnimated:undefined
       });
     }
     isFirstRunRef.current = false;

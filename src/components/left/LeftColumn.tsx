@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import React, {
+  FC,
   memo, useEffect, useMemo, useState,
 } from '../../lib/teact/teact';
 import { getActions, withGlobal } from '../../global';
@@ -13,7 +14,7 @@ import { selectCurrentChat, selectIsForumPanelOpen, selectTabState } from '../..
 import captureEscKeyListener from '../../util/captureEscKeyListener';
 import { captureControlledSwipe } from '../../util/swipeController';
 import {
-  IS_APP, IS_FIREFOX, IS_MAC_OS, IS_TOUCH_ENV, LAYERS_ANIMATION_NAME,
+  IS_APP, IS_ELECTRON, IS_FIREFOX, IS_MAC_OS, IS_TOUCH_ENV, LAYERS_ANIMATION_NAME,
 } from '../../util/windowEnvironment';
 
 import useFoldersReducer from '../../hooks/reducers/useFoldersReducer';
@@ -30,12 +31,25 @@ import NewChat from './newChat/NewChat.async';
 import Settings from './settings/Settings.async';
 
 import './LeftColumn.scss';
+import ChatFoldersTabs from './main/ChatFoldersTabs';
+import useAppLayout from '../../hooks/useAppLayout';
+import Button from '../ui/Button';
+import buildClassName from '../../util/buildClassName';
+import useOldLang from '../../hooks/useOldLang';
+import DropdownMenu from '../ui/DropdownMenu';
+import { APP_NAME, DEBUG, IS_BETA } from '../../config';
+import LeftSideMenuItems from './main/LeftSideMenuItems';
+import useFlag from '../../hooks/useFlag';
+import { useFullscreenStatus } from '../../hooks/window/useFullscreen';
+import useLeftHeaderButtonRtlForumTransition from './main/hooks/useLeftHeaderButtonRtlForumTransition';
+import useForumPanelRender from '../../hooks/useForumPanelRender';
 
 interface OwnProps {
   ref: RefObject<HTMLDivElement>;
 }
 
 type StateProps = {
+  foldersTabsView: string;
   searchQuery?: string;
   searchDate?: number;
   isFirstChatFolderActive: boolean;
@@ -70,6 +84,7 @@ const RESET_TRANSITION_DELAY_MS = 250;
 
 function LeftColumn({
   ref,
+  foldersTabsView,
   searchQuery,
   searchDate,
   isFirstChatFolderActive,
@@ -103,6 +118,10 @@ function LeftColumn({
   const [settingsScreen, setSettingsScreen] = useState(SettingsScreens.Main);
   const [contactsFilter, setContactsFilter] = useState<string>('');
   const [foldersState, foldersDispatch] = useFoldersReducer();
+
+  const { isMobile } = useAppLayout();
+  const showVerticalTabs = foldersTabsView === 'left' && !isMobile;
+  const [isMainMenuOpen, setIsMainMenuOpen] = useState(false);
 
   // Used to reset child components in background.
   const [lastResetTime, setLastResetTime] = useState<number>(0);
@@ -417,6 +436,18 @@ function LeftColumn({
     setContent(LeftColumnContent.Settings);
   });
 
+  const handleSelectContacts = useLastCallback(() => {
+    setContent(LeftColumnContent.Contacts);
+  });
+
+  const handleMainMenuClose = useLastCallback(() => {
+    setIsMainMenuOpen(false);
+  });
+
+  const handleMainMenuOpen = useLastCallback(() => {
+    setIsMainMenuOpen(true);
+  });
+
   useHotkeys(useMemo(() => ({
     'Mod+Shift+F': handleHotkeySearch,
     // https://support.mozilla.org/en-US/kb/take-screenshots-firefox
@@ -472,6 +503,28 @@ function LeftColumn({
       },
     });
   }, [prevSettingsScreenRef, ref]);
+
+  const oldLang = useOldLang();
+
+  const MainButton: FC<{}> = useMemo(() => {
+    return () => (
+      <Button
+        ripple={!isMobile}
+        size="default"
+        color="translucent"
+        className={isMainMenuOpen ? 'active' : ''}
+        // eslint-disable-next-line react/jsx-no-bind
+        onClick={() => setIsMainMenuOpen(true)}
+        ariaLabel={oldLang('AccDescrOpenMenu2')}
+      >
+        <div className={buildClassName(
+          'animated-menu-icon',
+          'no-animation',
+        )}
+        />
+      </Button>
+    );
+  }, [isMainMenuOpen, isMobile, oldLang]);
 
   function renderContent(isActive: boolean) {
     switch (contentType) {
@@ -540,26 +593,94 @@ function LeftColumn({
             isElectronUpdateAvailable={isElectronUpdateAvailable}
             isForumPanelOpen={isForumPanelOpen}
             onTopicSearch={handleTopicSearch}
+            onNewPrivateChat={handleSelectContacts}
+            onMainMenuTrigger={handleMainMenuOpen}
+            onMainMenuClose={handleMainMenuClose}
+            isMainMenuOpen={isMainMenuOpen}
+            foldersTabsView={foldersTabsView}
           />
         );
     }
   }
 
+
+  const { closeForumPanel } = getActions();
+  const [isBotMenuOpen, markBotMenuOpen, unmarkBotMenuOpen] = useFlag();
+  const versionString = IS_BETA ? `${APP_VERSION} Beta (${APP_REVISION})` : (DEBUG ? APP_REVISION : APP_VERSION);
+  const isFullscreen = useFullscreenStatus();
+
+  const {
+    isAnimationStarted,
+  } = useForumPanelRender(isForumPanelOpen);
+  const isForumPanelRendered = isForumPanelOpen && content === LeftColumnContent.ChatList;
+  const isForumPanelVisible = isForumPanelRendered && isAnimationStarted;
+
+  const {
+    shouldDisableDropdownMenuTransitionRef,
+    handleDropdownMenuTransitionEnd,
+  } = useLeftHeaderButtonRtlForumTransition(isForumPanelOpen);
+
+  const handleSelectSettings = useLastCallback(() => {
+    setContent(LeftColumnContent.Settings);
+  });
+
+  const handleSelectArchived = useLastCallback(() => {
+    setContent(LeftColumnContent.Archived);
+    closeForumPanel();
+  });
+
+
   return (
-    <Transition
-      ref={ref}
-      name={shouldSkipHistoryAnimations ? 'none' : LAYERS_ANIMATION_NAME}
-      renderCount={RENDER_COUNT}
-      activeKey={contentType}
-      shouldCleanup
-      cleanupExceptionKey={ContentType.Main}
-      shouldWrap
-      wrapExceptionKey={ContentType.Main}
-      id="LeftColumn"
-      withSwipeControl
-    >
-      {renderContent}
-    </Transition>
+    <div style="display: flex; flex-direction: row;" className={`LeftColumn--folders-${foldersTabsView}`}>
+      {oldLang.isRtl && <div className="DropdownMenuFiller" />}
+      <DropdownMenu
+        isOpen={isMainMenuOpen}
+        onClose={handleMainMenuClose}
+        renderTrigger={false}
+        footer={`${APP_NAME} ${versionString}`}
+        className={buildClassName(
+          'main-menu',
+          oldLang.isRtl && 'rtl',
+          isForumPanelVisible && oldLang.isRtl && 'right-aligned',
+          shouldDisableDropdownMenuTransitionRef.current && oldLang.isRtl && 'disable-transition',
+        )}
+        forceOpen={isBotMenuOpen}
+        positionX={isForumPanelVisible && oldLang.isRtl ? 'right' : 'left'}
+        transformOriginX={IS_ELECTRON && IS_MAC_OS && !isFullscreen ? 90 : undefined}
+        onTransitionEnd={oldLang.isRtl ? handleDropdownMenuTransitionEnd : undefined}
+      >
+        <LeftSideMenuItems
+          onSelectArchived={handleSelectArchived}
+          onSelectContacts={handleSelectContacts}
+          onSelectSettings={handleSelectSettings}
+          onBotMenuOpened={markBotMenuOpen}
+          onBotMenuClosed={unmarkBotMenuOpen}
+        />
+      </DropdownMenu>
+      <div className="ChatFoldersColumn">
+        <MainButton />
+        <ChatFoldersTabs
+          shouldHideFolderTabs={false}
+          isForumPanelOpen={false}
+          transitionRef={ref}
+          foldersTabsView="left"
+        />
+      </div>
+      <Transition
+        id="LeftColumn"
+        ref={ref}
+        name={shouldSkipHistoryAnimations ? 'none' : LAYERS_ANIMATION_NAME}
+        renderCount={RENDER_COUNT}
+        activeKey={contentType}
+        shouldCleanup
+        cleanupExceptionKey={ContentType.Main}
+        shouldWrap
+        wrapExceptionKey={ContentType.Main}
+        withSwipeControl
+      >
+        {renderContent}
+      </Transition>
+    </div>
   );
 }
 
@@ -593,8 +714,10 @@ export default memo(withGlobal<OwnProps>(
     const isChatOpen = Boolean(currentChat?.id);
     const isForumPanelOpen = selectIsForumPanelOpen(global);
     const forumPanelChatId = tabState.forumPanelChatId;
+    const { foldersTabsView } = global.settings.byKey;
 
     return {
+      foldersTabsView,
       searchQuery: query,
       searchDate: minDate,
       isFirstChatFolderActive: activeChatFolder === 0,

@@ -446,6 +446,10 @@ export type GlobalState = {
     history: StarsTransactionHistory;
     subscriptions?: StarsSubscriptions;
   };
+
+  wallpaperAnimation: number;
+
+  folderCustomIcons?: Record<string, string>
 };
 
 export type RequiredGlobalState = GlobalState & { _: never };

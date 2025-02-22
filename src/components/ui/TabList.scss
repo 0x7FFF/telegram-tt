@@ -18,6 +18,16 @@
   scrollbar-width: none;
   scrollbar-color: rgba(0, 0, 0, 0);
 
+  &--view-left {
+    overflow-y: auto;
+    height: 100%;
+    width: 5rem;
+    flex-direction: column;
+    padding: 0;
+    background-color: rgb(33, 33, 33);
+    justify-content: normal;
+  }
+
   &::-webkit-scrollbar {
     height: 0;
   }
@@ -26,5 +36,12 @@
     background-color: rgba(0, 0, 0, 0);
     // `box-shadow` prevents repaint on macOS when hovering out of scrollable container
     box-shadow: 0 0 1px rgba(255, 255, 255, 0.01);
+  }
+}
+
+html.theme-dark .TabList {
+  &--view-left {
+    background-color: #141414;
+    color: var(--primary-color);
   }
 }

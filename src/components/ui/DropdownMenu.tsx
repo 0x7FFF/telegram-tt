@@ -12,6 +12,8 @@ import './DropdownMenu.scss';
 type OwnProps = {
   className?: string;
   trigger?: FC<{ onTrigger: () => void; isOpen?: boolean }>;
+  renderTrigger?: boolean;
+  isOpen?: boolean;
   transformOriginX?: number;
   transformOriginY?: number;
   positionX?: 'left' | 'right';
@@ -28,6 +30,8 @@ type OwnProps = {
 
 const DropdownMenu: FC<OwnProps> = ({
   trigger,
+  renderTrigger = true,
+  isOpen,
   className,
   children,
   transformOriginX,
@@ -44,12 +48,12 @@ const DropdownMenu: FC<OwnProps> = ({
 }) => {
   // eslint-disable-next-line no-null/no-null
   const menuRef = useRef<HTMLDivElement>(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpenState, setIsOpenState] = useState(false);
 
   const toggleIsOpen = () => {
-    setIsOpen(!isOpen);
+    setIsOpenState(!isOpenState);
 
-    if (isOpen) {
+    if (isOpenState) {
       onClose?.();
     } else {
       onOpen?.();
@@ -59,7 +63,7 @@ const DropdownMenu: FC<OwnProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent<any>) => {
     const menu = menuRef.current;
 
-    if (!isOpen || e.keyCode !== 40 || !menu) {
+    if (!isOpenState || e.keyCode !== 40 || !menu) {
       return;
     }
 
@@ -72,7 +76,7 @@ const DropdownMenu: FC<OwnProps> = ({
   };
 
   const handleClose = useCallback(() => {
-    setIsOpen(false);
+    setIsOpenState(false);
     onClose?.();
   }, [onClose]);
 
@@ -99,11 +103,10 @@ const DropdownMenu: FC<OwnProps> = ({
       onKeyDown={handleKeyDown}
       onTransitionEnd={onTransitionEnd}
     >
-      {triggerComponent({ onTrigger: toggleIsOpen, isOpen })}
-
+      {renderTrigger && triggerComponent({ onTrigger: toggleIsOpen, isOpen: isOpenState })}
       <Menu
         ref={menuRef}
-        isOpen={isOpen || Boolean(forceOpen)}
+        isOpen={(typeof isOpen === 'boolean' ? isOpen : isOpenState) || Boolean(forceOpen)}
         className={className || ''}
         transformOriginX={transformOriginX}
         transformOriginY={transformOriginY}

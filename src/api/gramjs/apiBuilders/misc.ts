@@ -29,24 +29,49 @@ import { buildApiPeerId, getApiChatIdFromMtpPeer } from './peers';
 import { buildApiReaction } from './reactions';
 import { buildApiUser } from './users';
 
-export function buildApiWallpaper(wallpaper: GramJs.TypeWallPaper): ApiWallpaper | undefined {
+export function buildApiWallpaper(wallpaper: GramJs.TypeWallPaper): ApiWallpaper  {
+  const result: ApiWallpaper = {
+    id: wallpaper.id.toString(),
+    dark: wallpaper.dark || false,
+    pattern: false
+  } as any;
+
   if (wallpaper instanceof GramJs.WallPaperNoFile) {
-    // TODO: Plain color wallpapers
-    return undefined;
+    result.noFile = true;
+  } else {
+    result.noFile = false;
+    if (wallpaper.slug) {
+      result.slug = wallpaper.slug;
+    }
+
+    if (wallpaper.document) {
+      result.document = buildApiDocument(wallpaper.document);
+
+    }
+
+
+    result.pattern = wallpaper.pattern || false;
   }
 
-  const { slug } = wallpaper;
+  result.dark = wallpaper.dark || false;
 
-  const document = buildApiDocument(wallpaper.document);
-
-  if (!document) {
-    return undefined;
+  if (wallpaper.settings) {
+    const setting = wallpaper.settings;
+    if ('backgroundColor' in setting) {
+      result.backgroundColor = setting.backgroundColor
+    }
+    if ('secondBackgroundColor' in setting) {
+      result.secondBackgroundColor = setting.secondBackgroundColor
+    }
+    if ('thirdBackgroundColor' in setting) {
+      result.thirdBackgroundColor = setting.thirdBackgroundColor
+    }
+    if ('fourthBackgroundColor' in setting) {
+      result.fourthBackgroundColor = setting.fourthBackgroundColor
+    }
   }
 
-  return {
-    slug,
-    document,
-  };
+  return result;
 }
 
 export function buildApiSession(session: GramJs.Authorization): ApiSession {

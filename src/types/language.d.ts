@@ -584,6 +584,7 @@ export interface LangPair {
   'SettingsPerformanceStickerEffects': undefined;
   'SettingsPerformanceAutoplayGif': undefined;
   'SettingsPerformanceAutoplayVideo': undefined;
+  'SettingsWallpaperBackgroundAnimations': undefined;
   'FavoriteStickers': undefined;
   'PremiumStickers': undefined;
   'GroupStickers': undefined;

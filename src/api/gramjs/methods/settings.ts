@@ -180,23 +180,29 @@ export async function fetchWallpapers() {
     return undefined;
   }
 
-  const filteredWallpapers = result.wallpapers.filter((wallpaper) => {
-    if (
-      !(wallpaper instanceof GramJs.WallPaper)
-      || !(wallpaper.document instanceof GramJs.Document)
-    ) {
-      return false;
+  const wallpapers = result.wallpapers.filter(wallpaper=>{
+    if((wallpaper instanceof GramJs.WallPaper) && wallpaper.document){
+      //TODO Undocumented wallpaper type:
+      //  it has a pattern but no background colors specified.
+      //  What background color should be used?
+      //  This is neither processed by Android nor the WebK client.
+      //  Skip for now.
+      if(wallpaper.pattern && !wallpaper.settings){
+        return false;
+      }
     }
+    return true;
+  });  
 
-    return !wallpaper.pattern && wallpaper.document.mimeType !== 'application/x-tgwallpattern';
-  }) as GramJs.WallPaper[];
-
-  filteredWallpapers.forEach((wallpaper) => {
-    localDb.documents[String(wallpaper.document.id)] = wallpaper.document as GramJs.Document;
+  wallpapers.forEach((wallpaper) => {
+    if((wallpaper instanceof GramJs.WallPaper) && wallpaper.document){
+      localDb.documents[String(wallpaper.document.id)] = wallpaper.document as GramJs.Document;
+    }
+    
   });
 
   return {
-    wallpapers: filteredWallpapers.map(buildApiWallpaper).filter(Boolean),
+    wallpapers: wallpapers.map(buildApiWallpaper),
   };
 }
 

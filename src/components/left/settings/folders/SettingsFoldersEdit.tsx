@@ -1,10 +1,10 @@
-import type { FC } from '../../../../lib/teact/teact';
+import type { FC, TeactNode } from '../../../../lib/teact/teact';
 import React, {
   memo, useCallback, useEffect, useMemo, useState,
 } from '../../../../lib/teact/teact';
 import { getActions, getGlobal, withGlobal } from '../../../../global';
 
-import type { ApiChatlistExportedInvite } from '../../../../api/types';
+import { ApiChatlistExportedInvite, ApiMessageEntityTypes, ApiSticker } from '../../../../api/types';
 import type {
   FolderEditDispatch,
   FoldersState,
@@ -28,9 +28,11 @@ import GroupChatInfo from '../../../common/GroupChatInfo';
 import Icon from '../../../common/icons/Icon';
 import PrivateChatInfo from '../../../common/PrivateChatInfo';
 import FloatingActionButton from '../../../ui/FloatingActionButton';
-import InputText from '../../../ui/InputText';
 import ListItem from '../../../ui/ListItem';
 import Spinner from '../../../ui/Spinner';
+import FolderNameInput from './FolderNameInput';
+import { renderTextWithEntities } from '../../../common/helpers/renderTextWithEntities';
+import FolderIcon from '../../../ui/FolderIcon';
 
 type OwnProps = {
   state: FoldersState;
@@ -88,6 +90,34 @@ const SettingsFoldersEdit: FC<OwnProps & StateProps> = ({
     openLimitReachedModal,
     showNotification,
   } = getActions();
+
+  const folderPatchedWithCustomEmoji = useMemo(() => {
+    const folder = state.folder;
+    const title = state.folder.title;
+    let emoticon: TeactNode;
+
+    if (title.entities?.length === 1 && title.entities[0].type === ApiMessageEntityTypes.CustomEmoji) {
+      emoticon = renderTextWithEntities({
+        text: title.text,
+        entities: title.entities,
+        isSimple: true,
+        emojiSize: 32,
+      });
+      if (Array.isArray(emoticon)) {
+        emoticon = emoticon[0];
+      }
+    } else {
+      emoticon = <FolderIcon emoticon={folder.emoticon} />;
+    }
+
+    return {
+      ...state.folder,
+      title: {
+        text: title.text,
+      },
+      emoticon,
+    };
+  }, [state]);
 
   const isCreating = state.mode === 'create';
   const isEditingChatList = state.folder.isChatList;
@@ -154,6 +184,20 @@ const SettingsFoldersEdit: FC<OwnProps & StateProps> = ({
   const handleChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const { currentTarget } = event;
     dispatch({ type: 'setTitle', payload: currentTarget.value.trim() });
+  }, [dispatch]);
+
+  const handleEmoticonChange = useCallback((event: string | ApiSticker) => {
+    if (typeof event === 'string') {
+      dispatch({ type: 'setEmoticon', payload: event });
+    } else {
+      dispatch({
+        type: 'setCustomEmoji',
+        payload: {
+          emoji: event.emoji,
+          documentId: event.id,
+        },
+      });
+    }
   }, [dispatch]);
 
   const handleSubmit = useCallback(() => {
@@ -296,11 +340,13 @@ const SettingsFoldersEdit: FC<OwnProps & StateProps> = ({
             </p>
           )}
 
-          <InputText
+          <FolderNameInput
             className="mb-0"
             label={lang('FilterNameHint')}
-            value={state.folder.title.text}
+            value={folderPatchedWithCustomEmoji.title.text}
+            emoticon={folderPatchedWithCustomEmoji.emoticon}
             onChange={handleChange}
+            onEmoticonChange={handleEmoticonChange}
             error={state.error && state.error === ERROR_NO_TITLE ? ERROR_NO_TITLE : undefined}
           />
         </div>

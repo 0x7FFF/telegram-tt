@@ -62,6 +62,7 @@ const PERFORMANCE_OPTIONS: PerformanceSection[] = [
     { key: 'contextMenuBlur', label: 'SettingsPerformanceContextBlur', disabled: !IS_BACKDROP_BLUR_SUPPORTED },
     { key: 'rightColumnAnimations', label: 'SettingsPerformanceRightColumn' },
     { key: 'snapEffect', label: 'SettingsPerformanceThanos' },
+    { key: 'wallpaperBackgroundAnimations', label: 'SettingsWallpaperBackgroundAnimations' }
   ]],
   ['SettingsPerformanceStickers', [
     { key: 'animatedEmoji', label: 'SettingsPerformanceAnimatedEmoji' },

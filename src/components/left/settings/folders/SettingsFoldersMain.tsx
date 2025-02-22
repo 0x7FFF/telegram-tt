@@ -27,6 +27,8 @@ import Button from '../../../ui/Button';
 import Draggable from '../../../ui/Draggable';
 import ListItem from '../../../ui/ListItem';
 import Loading from '../../../ui/Loading';
+import RadioGroup from '../../../ui/RadioGroup';
+import type { AnimationLevel } from '../../../../types';
 
 type OwnProps = {
   isActive?: boolean;
@@ -38,6 +40,7 @@ type OwnProps = {
 type StateProps = {
   folderIds?: number[];
   foldersById: Record<number, ApiChatFolder>;
+  foldersTabsView: 'left' | 'top';
   recommendedChatFolders?: ApiChatFolder[];
   maxFolders: number;
   isPremium?: boolean;
@@ -59,16 +62,20 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
   onReset,
   folderIds,
   foldersById,
+  foldersTabsView,
   isPremium,
   recommendedChatFolders,
   maxFolders,
 }) => {
+  const lang = useOldLang();
+
   const {
     loadRecommendedChatFolders,
     addChatFolder,
     openLimitReachedModal,
     openDeleteChatFolderModal,
     sortChatFolders,
+    setSettingOption,
   } = getActions();
 
   const [state, setState] = useState<SortState>({
@@ -77,7 +84,19 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
     draggedIndex: undefined,
   });
 
+  const [tabsView, setTabsView] = useState<'left' | 'top'>(foldersTabsView);
+
   const prevFolderIds = usePreviousDeprecated(folderIds);
+
+  const tabsViewOptions = useMemo(() => ([
+    { label: lang('Tabs on the left'), value: 'left' },
+    { label: lang('Tabs at the top'), value: 'top' },
+  ]), [lang]);
+
+  const handleTabsViewOptionChange = useCallback((value) => {
+    setTabsView(value);
+    setSettingOption({ foldersTabsView: value });
+  }, []);
 
   // Sync folders state after changing folders in other clients
   useEffect(() => {
@@ -109,8 +128,6 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
 
     onCreateFolder();
   }, [foldersById, maxFolders, onCreateFolder, openLimitReachedModal]);
-
-  const lang = useOldLang();
 
   useHistoryBack({
     isActive,
@@ -367,6 +384,18 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
           ))}
         </div>
       )}
+
+      <div className="settings-item pt-3">
+        <h4 className="settings-item-header mb-3" dir={lang.isRtl ? 'rtl' : undefined}>
+          {lang('Tabs view')}
+        </h4>
+        <RadioGroup
+          selected={tabsView}
+          name="channel-type"
+          options={tabsViewOptions}
+          onChange={handleTabsViewOptionChange}
+        />
+      </div>
     </div>
   );
 };
@@ -379,9 +408,12 @@ export default memo(withGlobal<OwnProps>(
       recommended: recommendedChatFolders,
     } = global.chatFolders;
 
+    const { foldersTabsView } = global.settings.byKey;
+
     return {
       folderIds,
       foldersById,
+      foldersTabsView,
       isPremium: selectIsCurrentUserPremium(global),
       recommendedChatFolders,
       maxFolders: selectCurrentLimit(global, 'dialogFilters'),

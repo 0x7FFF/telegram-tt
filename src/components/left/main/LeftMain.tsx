@@ -1,4 +1,4 @@
-import type { FC } from '../../../lib/teact/teact';
+import { FC, useMemo } from '../../../lib/teact/teact';
 import React, {
   memo, useEffect, useRef, useState,
 } from '../../../lib/teact/teact';
@@ -8,9 +8,9 @@ import type { FolderEditDispatch } from '../../../hooks/reducers/useFoldersReduc
 import type { SettingsScreens } from '../../../types';
 import { LeftColumnContent } from '../../../types';
 
-import { PRODUCTION_URL } from '../../../config';
+import { APP_NAME, DEBUG, IS_BETA, PRODUCTION_URL } from '../../../config';
 import buildClassName from '../../../util/buildClassName';
-import { IS_ELECTRON, IS_TOUCH_ENV } from '../../../util/windowEnvironment';
+import { IS_ELECTRON, IS_MAC_OS, IS_TOUCH_ENV } from '../../../util/windowEnvironment';
 
 import useForumPanelRender from '../../../hooks/useForumPanelRender';
 import useLastCallback from '../../../hooks/useLastCallback';
@@ -27,6 +27,12 @@ import ForumPanel from './ForumPanel';
 import LeftMainHeader from './LeftMainHeader';
 
 import './LeftMain.scss';
+import DropdownMenu from '../../ui/DropdownMenu';
+import LeftSideMenuItems from './LeftSideMenuItems';
+import useFlag from '../../../hooks/useFlag';
+import useAppLayout from '../../../hooks/useAppLayout';
+import { useFullscreenStatus } from '../../../hooks/window/useFullscreen';
+import useLeftHeaderButtonRtlForumTransition from './hooks/useLeftHeaderButtonRtlForumTransition';
 
 type OwnProps = {
   content: LeftColumnContent;
@@ -44,6 +50,11 @@ type OwnProps = {
   onSettingsScreenSelect: (screen: SettingsScreens) => void;
   onTopicSearch: NoneToVoidFunction;
   onReset: () => void;
+  onNewPrivateChat: NoneToVoidFunction;
+  onMainMenuTrigger: NoneToVoidFunction;
+  onMainMenuClose: NoneToVoidFunction;
+  isMainMenuOpen: boolean;
+  foldersTabsView: 'left' | 'top';
 };
 
 const TRANSITION_RENDER_COUNT = Object.keys(LeftColumnContent).length / 2;
@@ -67,10 +78,18 @@ const LeftMain: FC<OwnProps> = ({
   onSettingsScreenSelect,
   onReset,
   onTopicSearch,
+  onNewPrivateChat,
+  onMainMenuTrigger,
+  onMainMenuClose,
+  isMainMenuOpen,
+  foldersTabsView,
 }) => {
-  const { closeForumPanel } = getActions();
   const [isNewChatButtonShown, setIsNewChatButtonShown] = useState(IS_TOUCH_ENV);
   const [isElectronAutoUpdateEnabled, setIsElectronAutoUpdateEnabled] = useState(false);
+
+
+
+
 
   useEffect(() => {
     window.electron?.getIsAutoUpdateEnabled().then(setIsElectronAutoUpdateEnabled);
@@ -111,19 +130,6 @@ const LeftMain: FC<OwnProps> = ({
         setIsNewChatButtonShown(false);
       }
     }, BUTTON_CLOSE_DELAY_MS);
-  });
-
-  const handleSelectSettings = useLastCallback(() => {
-    onContentChange(LeftColumnContent.Settings);
-  });
-
-  const handleSelectContacts = useLastCallback(() => {
-    onContentChange(LeftColumnContent.Contacts);
-  });
-
-  const handleSelectArchived = useLastCallback(() => {
-    onContentChange(LeftColumnContent.Archived);
-    closeForumPanel();
   });
 
   const handleUpdateClick = useLastCallback(() => {
@@ -175,12 +181,11 @@ const LeftMain: FC<OwnProps> = ({
         content={content}
         contactsFilter={contactsFilter}
         onSearchQuery={onSearchQuery}
-        onSelectSettings={handleSelectSettings}
-        onSelectContacts={handleSelectContacts}
-        onSelectArchived={handleSelectArchived}
         onReset={onReset}
         shouldSkipTransition={shouldSkipTransition}
         isClosingSearch={isClosingSearch}
+        onMainMenuTrigger={onMainMenuTrigger}
+        isMainMenuOpen={isMainMenuOpen}
       />
       <Transition
         name={shouldSkipTransition ? 'none' : 'zoomFade'}
@@ -240,7 +245,7 @@ const LeftMain: FC<OwnProps> = ({
       )}
       <NewChatButton
         isShown={isNewChatButtonShown}
-        onNewPrivateChat={handleSelectContacts}
+        onNewPrivateChat={onNewPrivateChat}
         onNewChannel={handleSelectNewChannel}
         onNewGroup={handleSelectNewGroup}
       />

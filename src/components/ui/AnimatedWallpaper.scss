@@ -1,0 +1,46 @@
+.AnimatedWallpaper{
+    &.wallpaper-wrap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      background: var(--tw-background);
+    }
+  
+    .wallpaper-mask {
+      -webkit-mask: center repeat;
+      -webkit-mask-size: var(--bg-size, auto);
+      -webkit-mask-image: var(--tw-image);
+      opacity: 0.3;
+    }
+    
+    .wallpaper-canvas.wallpaper-mask + .wallpaper-pattern {
+      background-image: none;
+      opacity: initial;
+      filter: none;
+    }
+    
+    .wallpaper-canvas {
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+    }
+    
+    .wallpaper-pattern {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      mix-blend-mode: soft-light;
+      background: center repeat;
+      background-size: var(--bg-size, auto);
+      background-image: var(--tw-image);
+      opacity: 0.5;
+    }
+  }

@@ -63,17 +63,22 @@ export type PerformanceTypeKey = (
   'pageTransitions' | 'messageSendingAnimations' | 'mediaViewerAnimations'
   | 'messageComposerAnimations' | 'contextMenuAnimations' | 'contextMenuBlur' | 'rightColumnAnimations'
   | 'animatedEmoji' | 'loopAnimatedStickers' | 'reactionEffects' | 'stickerEffects' | 'autoplayGifs' | 'autoplayVideos'
-  | 'storyRibbonAnimations' | 'snapEffect'
+  | 'storyRibbonAnimations' | 'snapEffect' | 'wallpaperBackgroundAnimations'
 );
 export type PerformanceType = {
   [key in PerformanceTypeKey]: boolean;
 };
 
 export interface IThemeSettings {
+  id?:string;
   background?: string;
   backgroundColor?: string;
   patternColor?: string;
   isBlurred?: boolean;
+  isAnimated?:boolean;
+  isDark?:boolean;
+  isPattern?:boolean;
+  colors?:number[];
 }
 
 export type NotifySettings = {

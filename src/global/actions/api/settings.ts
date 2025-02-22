@@ -24,6 +24,7 @@ import { updateTabState } from '../../reducers/tabs';
 import {
   selectChat, selectTabState, selectUser,
 } from '../../selectors';
+import generateUniqueId from '../../../util/generateUniqueId';
 
 addActionHandler('updateProfile', async (global, actions, payload): Promise<void> => {
   const {
@@ -165,7 +166,7 @@ addActionHandler('checkUsername', async (global, actions, payload): Promise<void
 
 addActionHandler('loadWallpapers', async (global): Promise<void> => {
   const result = await callApi('fetchWallpapers');
-  if (!result) {
+  if (!result?.wallpapers) {
     return;
   }
 
@@ -190,7 +191,10 @@ addActionHandler('uploadWallpaper', async (global, actions, payload): Promise<vo
       ...global.settings,
       loadedWallpapers: [
         {
+          id:generateUniqueId(),
+          noFile:false,
           slug: UPLOADING_WALLPAPER_SLUG,
+          pattern:false,
           document: {
             mediaType: 'document',
             fileName: '',
